@@ -1,15 +1,5 @@
-import Features from "@/components/subComponents/Features";
-import Hero from "@/components/subComponents/Hero";
-import SeeInAction from "@/components/subComponents/SeeInAction";
-import Testimonials from "@/components/subComponents/Testimonials";
+import { redirect } from "next/navigation";
 
-export default function Home() {
-  return (
-    <div className="relative min-h-screen  overflow-hidden">
-      <Hero />
-      <SeeInAction />
-      <Features />
-      <Testimonials />
-    </div>
-  );
+export default function Page() {
+  return redirect("/dashboard");
 }

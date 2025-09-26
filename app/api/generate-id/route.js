@@ -60,3 +60,21 @@ export async function POST(req) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
+
+export async function GET() {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI);
+
+    const ids = await BlockchainID.find({}, "blockchainId createdAt").sort({
+      createdAt: -1,
+    });
+
+    return NextResponse.json(ids, { status: 200 });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json(
+      { error: "Failed to fetch blockchain IDs" },
+      { status: 500 }
+    );
+  }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Shield,
@@ -22,6 +22,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -30,8 +31,42 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import axios from "axios";
 
 export default function BlockchainIDPage() {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [result, setResult] = useState(null);
+
+  const [ids, setIds] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setResult(null);
+
+    try {
+      const { data } = await axios.post(
+        "http://localhost:3000/api/generate-id",
+        {
+          fullName,
+          email,
+        }
+      );
+      setResult(data);
+    } catch (error) {
+      console.error(error);
+      setError(
+        error.response?.data?.error || "Server error. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const [touristData, setTouristData] = useState({
     name: "",
     nationality: "",
@@ -97,6 +132,26 @@ export default function BlockchainIDPage() {
     }
   };
 
+  useEffect(() => {
+    const fetchIDs = async () => {
+      setLoading(true);
+      try {
+        const { data } = await axios.get("/api/blockchain-ids");
+        setIds(data);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to fetch blockchain IDs");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchIDs();
+  }, []);
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p className="text-red-500">{error}</p>;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       {/* Header */}
@@ -132,295 +187,161 @@ export default function BlockchainIDPage() {
             <TabsTrigger value="network">Network Status</TabsTrigger>
           </TabsList>
 
+          {/* Generate ID Tab */}
           <TabsContent value="generate" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto">
+              {/* Form Card */}
+              <Card className="w-full shadow-lg">
                 <CardHeader>
                   <CardTitle>Create Blockchain ID</CardTitle>
                   <CardDescription>
                     Generate a secure, verifiable digital identity
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="mb-2" htmlFor="name">
-                        Full Name
-                      </Label>
+
+                <CardContent>
+                  <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="name">Full Name</Label>
                       <Input
                         id="name"
-                        value={touristData.name}
-                        onChange={(e) =>
-                          setTouristData({
-                            ...touristData,
-                            name: e.target.value,
-                          })
-                        }
-                        placeholder="Enter your full name"
+                        type="text"
+                        placeholder="John Doe"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        required
                       />
                     </div>
-                    <div>
-                      <Label className="mb-2" htmlFor="nationality">
-                        Nationality
-                      </Label>
-                      <Input
-                        id="nationality"
-                        value={touristData.nationality}
-                        onChange={(e) =>
-                          setTouristData({
-                            ...touristData,
-                            nationality: e.target.value,
-                          })
-                        }
-                        placeholder="Enter your nationality"
-                      />
-                    </div>
-                    <div>
-                      <Label className="mb-2" htmlFor="passport">
-                        Passport Number
-                      </Label>
-                      <Input
-                        id="passport"
-                        value={touristData.passportNumber}
-                        onChange={(e) =>
-                          setTouristData({
-                            ...touristData,
-                            passportNumber: e.target.value,
-                          })
-                        }
-                        placeholder="Enter passport number"
-                      />
-                    </div>
-                    <div>
-                      <Label className="mb-2" htmlFor="email">
-                        Email Address
-                      </Label>
+
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="email">Email Address</Label>
                       <Input
                         id="email"
                         type="email"
-                        value={touristData.email}
-                        onChange={(e) =>
-                          setTouristData({
-                            ...touristData,
-                            email: e.target.value,
-                          })
-                        }
-                        placeholder="Enter email address"
+                        placeholder="johndoe@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
                       />
                     </div>
-                  </div>
 
-                  <Button
-                    onClick={handleGenerateID}
-                    disabled={isGenerating}
-                    className="w-full"
-                    size="lg"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                        Generating ID...
-                      </>
-                    ) : (
-                      <>
-                        <Shield className="h-5 w-5 mr-2" />
-                        Generate Blockchain ID
-                      </>
-                    )}
-                  </Button>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? "Generating..." : "Generate ID"}
+                    </Button>
+                  </form>
 
-                  {isGenerating && (
-                    <div className="space-y-2">
-                      <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Generation Progress
-                      </div>
-                      <div className="space-y-2">
-                        {[
-                          "Validating identity documents...",
-                          "Generating cryptographic keys...",
-                          "Creating blockchain transaction...",
-                          "Mining block...",
-                          "Verifying on network...",
-                          "ID successfully created!",
-                        ].map((step, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center gap-2 text-sm"
-                          >
-                            {index < verificationStep ? (
-                              <CheckCircle className="h-4 w-4 text-green-500" />
-                            ) : index === verificationStep ? (
-                              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                            ) : (
-                              <div className="w-4 h-4 border-2 border-slate-300 rounded-full" />
-                            )}
-                            <span
-                              className={
-                                index < verificationStep
-                                  ? "text-green-600"
-                                  : index === verificationStep
-                                  ? "text-blue-600"
-                                  : "text-slate-500"
-                              }
-                            >
-                              {step}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                  {error && (
+                    <p className="text-red-500 mt-3 text-sm">{error}</p>
                   )}
                 </CardContent>
+
+                <CardFooter className="text-xs text-slate-500 dark:text-slate-400">
+                  ⚡️ Your private keys are securely encrypted and never
+                  exposed.
+                </CardFooter>
+
+                <CardFooter className="flex items-center gap-2 justify-center text-sm text-yellow-800 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900 px-3 py-1 rounded-md">
+                  Please avoid creating multiple Blockchain IDs frequently.
+                </CardFooter>
               </Card>
 
-              {blockchainID && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      Your Blockchain ID
-                      <Badge
-                        variant="outline"
-                        className={getStatusColor(blockchainID.status)}
-                      >
-                        {blockchainID.status}
-                      </Badge>
-                    </CardTitle>
-                    <CardDescription>
-                      Secure digital identity on the blockchain
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="text-center p-6 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 rounded-lg">
-                      <BsQrCode className="h-16 w-16  mx-auto mb-4" />
-                      <p className="font-mono text-lg font-semibold dark:text-indigo-100">
-                        {blockchainID.id}
-                      </p>
-                      <p className="text-sm  dark:text-indigo-300 mt-2">
-                        Scan QR code for verification
-                      </p>
-                    </div>
-
-                    <div className="space-y-3">
+              {/* Blockchain IDs List */}
+              <div className="grid grid-cols-1 gap-4">
+                {ids.map((item) => (
+                  <Card
+                    key={item._id}
+                    className="w-full shadow-lg flex flex-col"
+                  >
+                    <CardContent className="flex flex-col h-full justify-between">
                       <div>
-                        <Label className="text-xs text-slate-600 dark:text-slate-400">
-                          Block Number
-                        </Label>
-                        <div className="flex items-center gap-2">
-                          <code className="text-sm font-mono bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
-                            #{blockchainID.blockNumber}
-                          </code>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              copyToClipboard(
-                                blockchainID.blockNumber.toString()
-                              )
-                            }
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        </div>
+                        <p>
+                          <span className="font-semibold">Blockchain ID:</span>{" "}
+                          <span className="break-all">
+                            {String(item.blockchainId)}
+                          </span>
+                        </p>
                       </div>
 
-                      <div>
-                        <Label className="text-xs text-slate-600 dark:text-slate-400">
-                          Transaction Hash
-                        </Label>
-                        <div className="flex items-center gap-2">
-                          <code className="text-xs font-mono bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded truncate">
-                            {blockchainID.transactionHash}
-                          </code>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              copyToClipboard(blockchainID.transactionHash)
-                            }
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        </div>
+                      <div className="mt-auto space-y-1">
+                        <p>
+                          <span className="font-semibold">Created:</span>{" "}
+                          {new Date(item.createdAt).toLocaleString()}
+                        </p>
+                        <p>
+                          <span className="font-semibold">Updated:</span>{" "}
+                          {new Date(item.updatedAt).toLocaleString()}
+                        </p>
                       </div>
-
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <Label className="text-xs text-slate-600 dark:text-slate-400">
-                            Created
-                          </Label>
-                          <p className="font-medium">Jan 15, 2024</p>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-slate-600 dark:text-slate-400">
-                            Last Verified
-                          </Label>
-                          <p className="font-medium">Jan 20, 2024</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 bg-transparent"
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Export
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 bg-transparent"
-                      >
-                        <QrCode className="h-4 w-4 mr-2" />
-                        Show QR
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           </TabsContent>
 
+          {/* Verify ID Tab */}
           <TabsContent value="verify" className="space-y-6">
-            <Card>
+            <Card className="max-w-full mx-auto mt-6 shadow-lg">
               <CardHeader>
                 <CardTitle>Verify Blockchain ID</CardTitle>
                 <CardDescription>
-                  Validate the authenticity of a blockchain identity
+                  Check if a blockchain ID is authentic
                 </CardDescription>
               </CardHeader>
+
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <form className="flex flex-col gap-3">
                   <div>
-                    <Label className="mb-2" htmlFor="verify-id">
-                      Tourist ID
-                    </Label>
-                    <Input id="verify-id" placeholder="Enter TST-XXXX-XXXXXX" />
-                  </div>
-                  <div>
-                    <Label htmlFor="verify-hash" className="mb-2">
-                      Transaction Hash
+                    <Label htmlFor="blockchainId" className="mb-2">
+                      Blockchain ID
                     </Label>
                     <Input
-                      id="verify-hash"
-                      placeholder="Enter transaction hash"
+                      id="blockchainId"
+                      // value={blockchainId}
+                      // onChange={(e) => setBlockchainId(e.target.value)}
+                      required
+                      placeholder="Enter blockchain ID"
                     />
                   </div>
-                </div>
-                <Button className="w-full">
-                  <Fingerprint className="h-4 w-4 mr-2" />
-                  Verify Identity
-                </Button>
 
-                <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  <AlertDescription className="text-green-800 dark:text-green-200">
-                    ID TST-2024-001234 is verified and authentic. Last
-                    verification: 2 hours ago.
-                  </AlertDescription>
-                </Alert>
+                  <div>
+                    <Label htmlFor="fullName" className="mb-2">
+                      Full Name
+                    </Label>
+                    <Input
+                      id="fullName"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                      placeholder="Enter full name"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="email" className="mb-2">
+                      Email
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      // value={email}
+                      // onChange={(e) => setEmail(e.target.value)}
+                      required
+                      placeholder="Enter email"
+                    />
+                  </div>
+
+                  <Button type="submit" disabled={loading}>
+                    {/* {loading ? "Verifying..." : "Verify ID"} */}
+                  </Button>
+                </form>
+
+                {error && (
+                  <Alert variant="destructive">
+                    <XCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

@@ -24,6 +24,7 @@ import {
   TrendingUp,
   UserCheck,
 } from "lucide-react";
+import UserTracker from "@/components/user-tracking";
 
 export default function AuthorityDashboard() {
   const [activeAlerts, setActiveAlerts] = useState(3);
@@ -272,16 +273,13 @@ export default function AuthorityDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="h-64 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <MapPin className="h-12 w-12 text-slate-400 mx-auto mb-2" />
-                      <p className="text-slate-600 dark:text-slate-400">
-                        Interactive Map View
-                      </p>
-                      <p className="text-sm text-slate-500">
-                        1,247 active locations
-                      </p>
+                    <div className="w-full h-full text-center p-2">
+                      <UserTracker />
                     </div>
                   </div>
+                  <p className="text-slate-600 dark:text-slate-400 mt-6">
+                    Interactive Map View
+                  </p>
                 </CardContent>
               </Card>
 
